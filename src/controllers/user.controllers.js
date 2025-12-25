@@ -17,7 +17,7 @@ export const createUser = async (req, res) => {
       email,
     });
     if (checkUser) {
-      res
+      return res
         .status(409)
         .send(new ErrorResponse("Failed", "The Email is already exist"));
     } else {
@@ -50,13 +50,13 @@ export const createUser = async (req, res) => {
 
       //   response send in api
       res
-        .status(200)
+        .status(201)
         .json(
           new Response(
             "Success",
             "The User is Creates Successfully",
             { ...findAndUpdate.toObject(), accessToken },
-            200
+            201
           )
         );
     }
@@ -76,25 +76,65 @@ export const userLogin = async (req, res) => {
   try {
     const { email, password } = req?.body;
 
-    const findUser = await User.findOne({ email: email });
+    const findUser = await User.findOne({ email: email }).select("+password");
+    console.log("finduser", findUser);
+
     if (!findUser) {
-      res.status(404).send(new ErrorResponse("Failed", "The email is wrong"));
+      res
+        .status(401)
+        .send(new ErrorResponse("Failed", "The email and password is wrong"));
+      return;
     }
 
     const matchingPass = await comparePassword(password, findUser?.password);
     console.log(matchingPass);
 
     if (!matchingPass) {
-      res.status(401).send(new ErrorResponse("Failed", "Password is wrong"));
+      res
+        .status(401)
+        .send(new ErrorResponse("Failed", "The email and password is wrong"));
+      return;
     }
+
+    // create tokens
+    const refreshToken = createRefreshToken({
+      email,
+      id: findUser?._id,
+    });
+    const accessToken = createAccessToken({
+      email,
+      id: findUser?._id,
+    });
+
+    const user = findUser;
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    const finalUser = {
+      _id: user?._id,
+      firstName: user?.firstName,
+      lastName: user?.lastName,
+      email: user?.email,
+      refreshToken: user?.refreshToken,
+      accessToken: accessToken,
+    };
+
+    console.log("final user", finalUser);
 
     res
       .status(200)
       .send(
-        new Response("Success", "The User is Login Successfully", findUser, 200)
+        new Response(
+          "Success",
+          "The User is Login Successfully",
+          finalUser,
+          200
+        )
       );
   } catch (error) {
     console.log(error);
     res.status(500).send(new ErrorResponse("Failed", "Server error"));
   }
 };
+
+
