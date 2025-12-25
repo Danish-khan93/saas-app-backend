@@ -76,26 +76,37 @@ export const userLogin = async (req, res) => {
   try {
     const { email, password } = req?.body;
 
+    if (!email) {
+      res
+        .status(400)
+        .send(new ErrorResponse("Failed", "The email and password required"));
+      return;
+    }
+
     const findUser = await User.findOne({ email: email }).select("+password");
     console.log("finduser", findUser);
 
     if (!findUser) {
       res
         .status(401)
-        .send(new ErrorResponse("Failed", "The email and password is wrong"));
+        .send(new ErrorResponse("Failed", "The email is not Vaild"));
       return;
     }
-
-    const matchingPass = await comparePassword(password, findUser?.password);
-    console.log(matchingPass);
-
-    if (!matchingPass) {
+    if (!password) {
       res
-        .status(401)
-        .send(new ErrorResponse("Failed", "The email and password is wrong"));
+        .status(400)
+        .send(new ErrorResponse("Failed", "The Password is required"));
       return;
-    }
+    } else {
+      const matchingPass = await comparePassword(password, findUser?.password);
 
+      if (!matchingPass) {
+        res
+          .status(401)
+          .send(new ErrorResponse("Failed", "The email and password is wrong"));
+        return;
+      }
+    }
     // create tokens
     const refreshToken = createRefreshToken({
       email,
@@ -136,5 +147,3 @@ export const userLogin = async (req, res) => {
     res.status(500).send(new ErrorResponse("Failed", "Server error"));
   }
 };
-
-
