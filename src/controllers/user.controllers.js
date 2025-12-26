@@ -3,6 +3,7 @@ import {
   comparePassword,
   createAccessToken,
   createRefreshToken,
+  verifyToken,
 } from "../services/userAuth.service.js";
 import { ErrorResponse } from "../utils/customError.js";
 import { Response } from "../utils/customResponse.js";
@@ -11,6 +12,12 @@ export const createUser = async (req, res) => {
   // 2- create token access and refresh
   try {
     const { firstName, lastName, password, email } = req?.body;
+
+    if (!email) {
+      return res
+        .status(400)
+        .send(new ErrorResponse("Failed", "The Email is required"));
+    }
 
     //   check user already exist in db
     const checkUser = await User.findOne({
@@ -144,6 +151,91 @@ export const userLogin = async (req, res) => {
       );
   } catch (error) {
     console.log(error);
+    res.status(500).send(new ErrorResponse("Failed", "Server error"));
+  }
+};
+
+// refresh token
+export const refreshToken = async (req, res) => {
+  try {
+    const refresh = req?.body;
+    console.log(refresh);
+
+    const tokenVerification = await verifyToken(refresh?.token);
+    console.log(tokenVerification);
+
+    if (!tokenVerification) {
+      return res
+        .status(401)
+        .send(new ErrorResponse("Failed", "the token is invaild"));
+    }
+
+    if (refresh?.token !== tokenVerification.toObject().refreshToken) {
+      return res
+        .status(401)
+        .send(new ErrorResponse("Failed", "the token is invaild"));
+    } else {
+      const { _id, email } = tokenVerification;
+      // console.log(_id, email);
+
+      const newAccessToken = createAccessToken({ email, id: _id });
+
+      res
+        .status(200)
+        .send(
+          new Response(
+            "Success",
+            "The regenerate the access token ",
+            { token: newAccessToken },
+            200
+          )
+        );
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(new ErrorResponse("Failed", "Server error"));
+  }
+};
+
+// logout user
+
+export const logout = async (req, res) => {
+  try {
+    const { token } = req.body;
+    console.log(token);
+
+    const verifyTheToken = await verifyToken(token);
+
+    if (!verifyTheToken) {
+      console.log("verifyTheToken");
+
+      return res
+        .status(401)
+        .send(new ErrorResponse("Failed", "the token is invaild"));
+    }
+
+    if (verifyTheToken.toObject()?.refreshToken !== token) {
+      console.log("verifyTheToken");
+      return res
+        .status(401)
+        .send(new ErrorResponse("Failed", "the token is invaild"));
+    } else {
+      const findAndUpdateUser = await User.findByIdAndUpdate(
+        verifyTheToken.toObject()?._id,
+        { refreshToken: null },
+        { new: true }
+      );
+
+      res.status(200).send(
+        new Response(
+          "Success",
+          "The User is Successfully LogOut",
+
+          200
+        )
+      );
+    }
+  } catch (error) {
     res.status(500).send(new ErrorResponse("Failed", "Server error"));
   }
 };
