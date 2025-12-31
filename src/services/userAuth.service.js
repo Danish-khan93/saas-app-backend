@@ -29,10 +29,11 @@ export const createAccessToken = (payload) => {
 
 export const comparePassword = async (password, hashPass) => {
   try {
-    const comapreing = await compare(password, hashPass);
-    return comapreing;
+    const comparing = await compare(password, hashPass);
+    return comparing;
   } catch (error) {
     console.log(error);
+    return false;
   }
 };
 
