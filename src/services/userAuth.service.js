@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { compare } from "bcryptjs";
+import { User } from "../models/user.models.js";
 dotenv.config();
 
 // create token jwt
@@ -28,9 +29,25 @@ export const createAccessToken = (payload) => {
 
 export const comparePassword = async (password, hashPass) => {
   try {
-    const comapreing = await compare(password, hashPass);
-    return comapreing;
+    const comparing = await compare(password, hashPass);
+    return comparing;
   } catch (error) {
     console.log(error);
+    return false;
   }
+};
+
+// verify the token for
+
+export const verifyToken = async (token) => {
+  // token decoded
+  const decoded = jwt.verify(token, process.env.REFRESH_TOKEN);
+  // console.log(decoded, "decoded token ");
+  // find user with decoded value
+  const { email, id } = decoded;
+  // console.log(email, id);
+
+  const findUser = await User.findById(id);
+
+  return findUser;
 };

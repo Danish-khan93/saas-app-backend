@@ -1,12 +1,32 @@
 // in this file we define the user routes login signup and auth
 
 import express from "express";
-import { createUser, userLogin } from "../controllers/user.controllers.js";
+import {
+  createUser,
+  refreshToken,
+  userLogin,
+  logout,
+} from "../controllers/user.controllers.js";
+import { authGaurd } from "../middleware/auth.middleware.js";
 
 const userRoutes = express.Router();
 
-// user signup
+// user signup\
+
+
+//in this phase i only use token but in second phase i make it in both session and token  
+
+
 userRoutes.post("/createuser", createUser);
 userRoutes.post("/login", userLogin);
+userRoutes.post("/refresh-token", refreshToken); // refresh aceess token
+userRoutes.post("/logout", logout); // logout
+userRoutes.get("/dummy", authGaurd, (req, res) => {
+  try {
+    res.send({ message: "hello auth gaurd" });
+  } catch (error) {
+    res.status(500).send(new ErrorResponse("Failed", "Server error in routes file "));
+  }
+});
 
 export { userRoutes };
