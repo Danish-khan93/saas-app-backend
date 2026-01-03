@@ -11,7 +11,12 @@ import { authGaurd } from "../middleware/auth.middleware.js";
 
 const userRoutes = express.Router();
 
-// user signup
+// user signup\
+
+
+//in this phase i only use token but in second phase i make it in both session and token  
+
+
 userRoutes.post("/createuser", createUser);
 userRoutes.post("/login", userLogin);
 userRoutes.post("/refresh-token", refreshToken); // refresh aceess token
